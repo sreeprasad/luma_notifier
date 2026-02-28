@@ -1,0 +1,9 @@
+.env
+sent_events.json
+
+*.log
+
+__pycache__/
+*.pyc
+.venv/
+venv/
