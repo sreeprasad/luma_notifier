@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import json
 import logging
 import os
@@ -31,7 +30,6 @@ log = logging.getLogger(__name__)
 
 
 def load_env():
-    """Load environment variables from .env file if it exists."""
     if ENV_FILE.exists():
         for line in ENV_FILE.read_text().splitlines():
             line = line.strip()
@@ -50,7 +48,6 @@ FRIEND_PHONE_NUMBER = os.environ.get("FRIEND_PHONE_NUMBER", "")
 
 
 def check_config():
-    """Verify all required env vars are set."""
     missing = []
     for var in ["GOOGLE_CALENDAR_ICS_URL", "FRIEND_PHONE_NUMBER"]:
         if not os.environ.get(var):
@@ -61,9 +58,7 @@ def check_config():
         sys.exit(1)
 
 
-
 def fetch_calendar() -> Calendar:
-    """Download and parse the ICS calendar feed."""
     log.info("Fetching Google Calendar ICS feed...")
     resp = requests.get(GOOGLE_CALENDAR_ICS_URL, timeout=30)
     resp.raise_for_status()
@@ -173,8 +168,8 @@ def save_sent_events(sent_ids: set[str]) -> None:
     log.info(f"Saved {len(sent_ids)} sent event IDs")
 
 
+
 def send_imessage(message: str) -> bool:
-    """Send an iMessage/SMS via macOS Messages.app using AppleScript."""
     escaped_message = message.replace("\\", "\\\\").replace('"', '\\"')
     escaped_phone = FRIEND_PHONE_NUMBER.replace('"', '\\"')
 
@@ -208,7 +203,6 @@ def send_imessage(message: str) -> bool:
 
 
 def _send_sms_fallback(message: str, phone: str) -> bool:
-    """Fallback to SMS if iMessage fails (e.g., friend is on Android)."""
     log.info("Trying SMS fallback...")
     applescript = f'''
     tell application "Messages"
@@ -234,7 +228,6 @@ def _send_sms_fallback(message: str, phone: str) -> bool:
 
 
 def format_message(events: list[dict]) -> str:
-    """Format all new events into a single message."""
     lines = []
 
     if len(events) == 1:
@@ -267,7 +260,11 @@ def _format_date(start: str) -> str:
         return ""
     try:
         dt = datetime.fromisoformat(start)
-        return dt.strftime("%a, %b %d at %I:%M %p")
+        pacific = timezone(timedelta(hours=-8))  # PST
+        if dt.month >= 3 and dt.month < 11:
+            pacific = timezone(timedelta(hours=-7))
+        dt_local = dt.astimezone(pacific)
+        return dt_local.strftime("%a, %b %d at %I:%M %p")
     except (ValueError, TypeError):
         return start
 
